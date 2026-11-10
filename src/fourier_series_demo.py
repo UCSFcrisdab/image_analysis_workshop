@@ -8,7 +8,8 @@ The animations (and one still picture of each) are saved in Pictures/fourier/:
 
     circle_to_wave.gif     a point going around a circle draws a sine wave;
                            the radius is the amplitude, the starting angle the phase
-    square_wave_build.gif  adding sine waves one by one approaches a square wave
+    square_wave_build_50.gif  adding 50 sine waves one by one approaches a square wave
+                           (square_wave_build.gif is the older version with 10 waves)
     epicycles.gif          the same sum, drawn as circles riding on circles
     phase_scramble.gif     same amplitudes, different phases: no more square wave
     phase_shift.gif        moving the square wave in time only changes the phases
@@ -176,9 +177,11 @@ def circle_to_wave():
 
 # --- 2. Adding sine waves one by one ------------------------------------------
 
-def square_wave_build(n_waves=10):
+def square_wave_build(n_waves=50):
     freqs, amps, phases = square_wave_recipe(n_waves)
-    target = square_wave(TIME)
+    # More time points than TIME, so the fastest waves (up to 99 Hz) look smooth
+    time = np.linspace(TIME[0], TIME[-1], 5000)
+    target = square_wave(time)
     fig = plt.figure(figsize=(12, 6.5))
     grid = fig.add_gridspec(2, 2, width_ratios=[2.2, 1], hspace=0.45, wspace=0.25)
     ax_sum = fig.add_subplot(grid[0, 0])
@@ -186,27 +189,29 @@ def square_wave_build(n_waves=10):
     ax_amp = fig.add_subplot(grid[0, 1])
     ax_phase = fig.add_subplot(grid[1, 1])
 
-    # Show each new step for a few frames, and hold the last one a bit longer.
-    frames = [n for n in range(1, n_waves + 1) for _ in range(3)] + [n_waves] * 6
+    # Show each of the first 10 steps for a few frames, later steps for one frame
+    # each (so 50 waves don't take a minute), and hold the last one a bit longer.
+    frames = ([n for n in range(1, min(n_waves, 10) + 1) for _ in range(3)]
+              + list(range(11, n_waves + 1)) + [n_waves] * 6)
 
     def draw(frame):
         n = frames[frame]
         ax_sum.clear()
         ax_parts.clear()
-        total = sum(sine(TIME, f, a, p) for f, a, p in
+        total = sum(sine(time, f, a, p) for f, a, p in
                     zip(freqs[:n], amps[:n], phases[:n]))
         style_signal_axes(ax_sum, f"Sum of the first {n} sine wave"
                           f"{'s' if n > 1 else ''}", xlabel=False)
-        ax_sum.plot(TIME, target, color=TARGET_COLOR, lw=1.5, ls="--",
+        ax_sum.plot(time, target, color=TARGET_COLOR, lw=1.5, ls="--",
                     label="square wave")
-        ax_sum.plot(TIME, total, color=SUM_COLOR, lw=2, label="sum")
+        ax_sum.plot(time, total, color=SUM_COLOR, lw=2, label="sum")
         ax_sum.legend(loc="upper right", frameon=False, fontsize=9)
 
         style_signal_axes(ax_parts, f"The waves added so far (newest: "
                           f"{freqs[n - 1]:g} Hz, amplitude {amps[n - 1]:.2f})")
         for f, a, p in zip(freqs[:n - 1], amps[:n - 1], phases[:n - 1]):
-            ax_parts.plot(TIME, sine(TIME, f, a, p), color=FADED_COLOR, lw=1)
-        ax_parts.plot(TIME, sine(TIME, freqs[n - 1], amps[n - 1], phases[n - 1]),
+            ax_parts.plot(time, sine(time, f, a, p), color=FADED_COLOR, lw=1)
+        ax_parts.plot(time, sine(time, freqs[n - 1], amps[n - 1], phases[n - 1]),
                       color=NEW_COLOR, lw=2)
 
         colors = [FADED_COLOR] * (n - 1) + [NEW_COLOR]
@@ -216,7 +221,7 @@ def square_wave_build(n_waves=10):
                      "frequency, amplitude and phase", fontsize=12)
 
     anim = FuncAnimation(fig, draw, frames=len(frames))
-    save(anim, fig, "square_wave_build", fps=3, still_frame=frames.index(4))
+    save(anim, fig, f"square_wave_build_{n_waves}", fps=3, still_frame=frames.index(4))
 
 
 # --- 3. Circles riding on circles ---------------------------------------------

@@ -153,6 +153,7 @@ This is the simplest merge possible, most often changes will have happened on th
 
 ---
 ![bg contain](../Pictures/git/git_branches.png)
+(AI made figure)
 
 ---
 
